@@ -2,6 +2,22 @@
 
 package model
 
+type BaseError interface {
+	IsBaseError()
+}
+
+type GameResult interface {
+	IsGameResult()
+}
+
+type PlayerResult interface {
+	IsPlayerResult()
+}
+
+type PlayersResult interface {
+	IsPlayersResult()
+}
+
 type Game struct {
 	Appid           int    `json:"appid"`
 	Name            string `json:"name"`
@@ -9,9 +25,34 @@ type Game struct {
 	ImageURL        string `json:"image_url"`
 }
 
+type GameList struct {
+	Games []*Game `json:"games"`
+	Count int     `json:"count"`
+}
+
+func (GameList) IsGameResult() {}
+
+type NotFoundError struct {
+	Message string `json:"message"`
+}
+
+func (NotFoundError) IsBaseError()     {}
+func (NotFoundError) IsPlayerResult()  {}
+func (NotFoundError) IsPlayersResult() {}
+func (NotFoundError) IsGameResult()    {}
+
 type SteamUser struct {
 	Steamid    string `json:"steamid"`
 	Name       string `json:"name"`
 	ProfileURL string `json:"profile_url"`
 	AvatarURL  string `json:"avatar_url"`
 }
+
+func (SteamUser) IsPlayerResult() {}
+
+type SteamUserList struct {
+	Users []*SteamUser `json:"users"`
+	Count int          `json:"count"`
+}
+
+func (SteamUserList) IsPlayersResult() {}

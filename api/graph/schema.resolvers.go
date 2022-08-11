@@ -13,13 +13,18 @@ import (
 )
 
 // Player is the resolver for the player field.
-func (r *queryResolver) Player(ctx context.Context, steamid string) (*model.SteamUser, error) {
+func (r *queryResolver) Player(ctx context.Context, steamid string) (model.PlayerResult, error) {
 	steamid = utils.GetSteamID(steamid)
 
 	if !utils.IsSteamID(steamid) {
 		res, err := r.SteamClient.ResolveVanityURL(ctx, steamid)
 		if err != nil {
 			return nil, err
+		}
+		if res.Response.Success == 42 {
+			return model.NotFoundError{
+				Message: "User not found",
+			}, nil
 		}
 
 		steamid = res.Response.Steamid
@@ -41,7 +46,7 @@ func (r *queryResolver) Player(ctx context.Context, steamid string) (*model.Stea
 }
 
 // Friends is the resolver for the Friends field.
-func (r *queryResolver) Friends(ctx context.Context, steamid string) ([]*model.SteamUser, error) {
+func (r *queryResolver) Friends(ctx context.Context, steamid string) (model.PlayersResult, error) {
 	resFriends, err := r.SteamClient.GetFriendList(ctx, steamid)
 	if err != nil {
 		return nil, err
@@ -67,11 +72,14 @@ func (r *queryResolver) Friends(ctx context.Context, steamid string) ([]*model.S
 		})
 	}
 
-	return us, nil
+	return model.SteamUserList{
+		Users: us,
+		Count: len(us),
+	}, nil
 }
 
 // Players is the resolver for the Players field.
-func (r *queryResolver) Players(ctx context.Context, steamids []string) ([]*model.SteamUser, error) {
+func (r *queryResolver) Players(ctx context.Context, steamids []string) (model.PlayersResult, error) {
 	res, err := r.SteamClient.GetPlayerSummaries(ctx, steamids)
 	if err != nil {
 		return nil, err
@@ -87,11 +95,14 @@ func (r *queryResolver) Players(ctx context.Context, steamids []string) ([]*mode
 		})
 	}
 
-	return us, nil
+	return model.SteamUserList{
+		Users: us,
+		Count: len(us),
+	}, nil
 }
 
 // OwnedGames is the resolver for the OwnedGames field.
-func (r *queryResolver) OwnedGames(ctx context.Context, steamid string) ([]*model.Game, error) {
+func (r *queryResolver) OwnedGames(ctx context.Context, steamid string) (model.GameResult, error) {
 	res, err := r.SteamClient.GetOwnedGames(ctx, steamid)
 	if err != nil {
 		return nil, err
@@ -106,7 +117,11 @@ func (r *queryResolver) OwnedGames(ctx context.Context, steamid string) ([]*mode
 			ImageURL:        fmt.Sprintf("https://steamcdn-a.akamaihd.net/steam/apps/%v/capsule_231x87.jpg", g.Appid),
 		})
 	}
-	return gs, nil
+
+	return model.GameList{
+		Games: gs,
+		Count: len(gs),
+	}, nil
 }
 
 // Query returns generated.QueryResolver implementation.

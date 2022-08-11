@@ -47,6 +47,7 @@ type Response struct {
 	Success   int       `json:"success"`
 	GameCount int       `json:"game_count"`
 	Games     []Games   `json:"games"`
+	Message   string    `json:"message"`
 }
 
 type GetFriendList struct {

@@ -50,6 +50,15 @@ type ComplexityRoot struct {
 		PlaytimeForever func(childComplexity int) int
 	}
 
+	GameList struct {
+		Count func(childComplexity int) int
+		Games func(childComplexity int) int
+	}
+
+	NotFoundError struct {
+		Message func(childComplexity int) int
+	}
+
 	Query struct {
 		Friends    func(childComplexity int, steamid string) int
 		OwnedGames func(childComplexity int, steamid string) int
@@ -63,13 +72,18 @@ type ComplexityRoot struct {
 		ProfileURL func(childComplexity int) int
 		Steamid    func(childComplexity int) int
 	}
+
+	SteamUserList struct {
+		Count func(childComplexity int) int
+		Users func(childComplexity int) int
+	}
 }
 
 type QueryResolver interface {
-	Player(ctx context.Context, steamid string) (*model.SteamUser, error)
-	Friends(ctx context.Context, steamid string) ([]*model.SteamUser, error)
-	Players(ctx context.Context, steamids []string) ([]*model.SteamUser, error)
-	OwnedGames(ctx context.Context, steamid string) ([]*model.Game, error)
+	Player(ctx context.Context, steamid string) (model.PlayerResult, error)
+	Friends(ctx context.Context, steamid string) (model.PlayersResult, error)
+	Players(ctx context.Context, steamids []string) (model.PlayersResult, error)
+	OwnedGames(ctx context.Context, steamid string) (model.GameResult, error)
 }
 
 type executableSchema struct {
@@ -114,6 +128,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Game.PlaytimeForever(childComplexity), true
+
+	case "GameList.count":
+		if e.complexity.GameList.Count == nil {
+			break
+		}
+
+		return e.complexity.GameList.Count(childComplexity), true
+
+	case "GameList.games":
+		if e.complexity.GameList.Games == nil {
+			break
+		}
+
+		return e.complexity.GameList.Games(childComplexity), true
+
+	case "NotFoundError.message":
+		if e.complexity.NotFoundError.Message == nil {
+			break
+		}
+
+		return e.complexity.NotFoundError.Message(childComplexity), true
 
 	case "Query.Friends":
 		if e.complexity.Query.Friends == nil {
@@ -191,6 +226,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.SteamUser.Steamid(childComplexity), true
 
+	case "SteamUserList.count":
+		if e.complexity.SteamUserList.Count == nil {
+			break
+		}
+
+		return e.complexity.SteamUserList.Count(childComplexity), true
+
+	case "SteamUserList.users":
+		if e.complexity.SteamUserList.Users == nil {
+			break
+		}
+
+		return e.complexity.SteamUserList.Users(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -247,6 +296,14 @@ var sources = []*ast.Source{
 #
 # https://gqlgen.com/getting-started/
 
+interface BaseError {
+  message: String!
+}
+
+type NotFoundError implements BaseError {
+  message: String!
+}
+
 type SteamUser {
   steamid: String!
   name: String!
@@ -261,11 +318,25 @@ type Game {
   image_url: String!
 }
 
+type SteamUserList {
+  users: [SteamUser!]!
+  count: Int!
+}
+
+type GameList {
+  games: [Game!]!
+  count: Int!
+}
+
+union PlayerResult = SteamUser | NotFoundError
+union PlayersResult = SteamUserList | NotFoundError
+union GameResult = GameList | NotFoundError
+
 type Query {
-  Player(steamid: String!): SteamUser!
-  Friends(steamid: String!): [SteamUser!]!
-  Players(steamids: [String!]!): [SteamUser!]!
-  OwnedGames(steamid: String!): [Game!]!
+  Player(steamid: String!): PlayerResult!
+  Friends(steamid: String!): PlayersResult!
+  Players(steamids: [String!]!): PlayersResult!
+  OwnedGames(steamid: String!): GameResult!
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -563,6 +634,148 @@ func (ec *executionContext) fieldContext_Game_image_url(ctx context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _GameList_games(ctx context.Context, field graphql.CollectedField, obj *model.GameList) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GameList_games(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Games, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Game)
+	fc.Result = res
+	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐGameᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GameList_games(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GameList",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "appid":
+				return ec.fieldContext_Game_appid(ctx, field)
+			case "name":
+				return ec.fieldContext_Game_name(ctx, field)
+			case "playtime_forever":
+				return ec.fieldContext_Game_playtime_forever(ctx, field)
+			case "image_url":
+				return ec.fieldContext_Game_image_url(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Game", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GameList_count(ctx context.Context, field graphql.CollectedField, obj *model.GameList) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GameList_count(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Count, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GameList_count(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GameList",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NotFoundError_message(ctx context.Context, field graphql.CollectedField, obj *model.NotFoundError) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_NotFoundError_message(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_NotFoundError_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NotFoundError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_Player(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_Player(ctx, field)
 	if err != nil {
@@ -589,9 +802,9 @@ func (ec *executionContext) _Query_Player(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.SteamUser)
+	res := resTmp.(model.PlayerResult)
 	fc.Result = res
-	return ec.marshalNSteamUser2ᚖgithubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐSteamUser(ctx, field.Selections, res)
+	return ec.marshalNPlayerResult2githubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐPlayerResult(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_Player(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -601,17 +814,7 @@ func (ec *executionContext) fieldContext_Query_Player(ctx context.Context, field
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "steamid":
-				return ec.fieldContext_SteamUser_steamid(ctx, field)
-			case "name":
-				return ec.fieldContext_SteamUser_name(ctx, field)
-			case "profile_url":
-				return ec.fieldContext_SteamUser_profile_url(ctx, field)
-			case "avatar_url":
-				return ec.fieldContext_SteamUser_avatar_url(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type SteamUser", field.Name)
+			return nil, errors.New("field of type PlayerResult does not have child fields")
 		},
 	}
 	defer func() {
@@ -654,9 +857,9 @@ func (ec *executionContext) _Query_Friends(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.SteamUser)
+	res := resTmp.(model.PlayersResult)
 	fc.Result = res
-	return ec.marshalNSteamUser2ᚕᚖgithubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐSteamUserᚄ(ctx, field.Selections, res)
+	return ec.marshalNPlayersResult2githubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐPlayersResult(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_Friends(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -666,17 +869,7 @@ func (ec *executionContext) fieldContext_Query_Friends(ctx context.Context, fiel
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "steamid":
-				return ec.fieldContext_SteamUser_steamid(ctx, field)
-			case "name":
-				return ec.fieldContext_SteamUser_name(ctx, field)
-			case "profile_url":
-				return ec.fieldContext_SteamUser_profile_url(ctx, field)
-			case "avatar_url":
-				return ec.fieldContext_SteamUser_avatar_url(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type SteamUser", field.Name)
+			return nil, errors.New("field of type PlayersResult does not have child fields")
 		},
 	}
 	defer func() {
@@ -719,9 +912,9 @@ func (ec *executionContext) _Query_Players(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.SteamUser)
+	res := resTmp.(model.PlayersResult)
 	fc.Result = res
-	return ec.marshalNSteamUser2ᚕᚖgithubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐSteamUserᚄ(ctx, field.Selections, res)
+	return ec.marshalNPlayersResult2githubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐPlayersResult(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_Players(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -731,17 +924,7 @@ func (ec *executionContext) fieldContext_Query_Players(ctx context.Context, fiel
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "steamid":
-				return ec.fieldContext_SteamUser_steamid(ctx, field)
-			case "name":
-				return ec.fieldContext_SteamUser_name(ctx, field)
-			case "profile_url":
-				return ec.fieldContext_SteamUser_profile_url(ctx, field)
-			case "avatar_url":
-				return ec.fieldContext_SteamUser_avatar_url(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type SteamUser", field.Name)
+			return nil, errors.New("field of type PlayersResult does not have child fields")
 		},
 	}
 	defer func() {
@@ -784,9 +967,9 @@ func (ec *executionContext) _Query_OwnedGames(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Game)
+	res := resTmp.(model.GameResult)
 	fc.Result = res
-	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐGameᚄ(ctx, field.Selections, res)
+	return ec.marshalNGameResult2githubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐGameResult(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_OwnedGames(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -796,17 +979,7 @@ func (ec *executionContext) fieldContext_Query_OwnedGames(ctx context.Context, f
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "appid":
-				return ec.fieldContext_Game_appid(ctx, field)
-			case "name":
-				return ec.fieldContext_Game_name(ctx, field)
-			case "playtime_forever":
-				return ec.fieldContext_Game_playtime_forever(ctx, field)
-			case "image_url":
-				return ec.fieldContext_Game_image_url(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Game", field.Name)
+			return nil, errors.New("field of type GameResult does not have child fields")
 		},
 	}
 	defer func() {
@@ -1123,6 +1296,104 @@ func (ec *executionContext) fieldContext_SteamUser_avatar_url(ctx context.Contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SteamUserList_users(ctx context.Context, field graphql.CollectedField, obj *model.SteamUserList) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SteamUserList_users(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Users, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.SteamUser)
+	fc.Result = res
+	return ec.marshalNSteamUser2ᚕᚖgithubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐSteamUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SteamUserList_users(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SteamUserList",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "steamid":
+				return ec.fieldContext_SteamUser_steamid(ctx, field)
+			case "name":
+				return ec.fieldContext_SteamUser_name(ctx, field)
+			case "profile_url":
+				return ec.fieldContext_SteamUser_profile_url(ctx, field)
+			case "avatar_url":
+				return ec.fieldContext_SteamUser_avatar_url(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SteamUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SteamUserList_count(ctx context.Context, field graphql.CollectedField, obj *model.SteamUserList) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SteamUserList_count(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Count, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SteamUserList_count(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SteamUserList",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2905,6 +3176,91 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    ************************** interface.gotpl ***************************
 
+func (ec *executionContext) _BaseError(ctx context.Context, sel ast.SelectionSet, obj model.BaseError) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.NotFoundError:
+		return ec._NotFoundError(ctx, sel, &obj)
+	case *model.NotFoundError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._NotFoundError(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _GameResult(ctx context.Context, sel ast.SelectionSet, obj model.GameResult) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.GameList:
+		return ec._GameList(ctx, sel, &obj)
+	case *model.GameList:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._GameList(ctx, sel, obj)
+	case model.NotFoundError:
+		return ec._NotFoundError(ctx, sel, &obj)
+	case *model.NotFoundError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._NotFoundError(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _PlayerResult(ctx context.Context, sel ast.SelectionSet, obj model.PlayerResult) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SteamUser:
+		return ec._SteamUser(ctx, sel, &obj)
+	case *model.SteamUser:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SteamUser(ctx, sel, obj)
+	case model.NotFoundError:
+		return ec._NotFoundError(ctx, sel, &obj)
+	case *model.NotFoundError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._NotFoundError(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _PlayersResult(ctx context.Context, sel ast.SelectionSet, obj model.PlayersResult) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SteamUserList:
+		return ec._SteamUserList(ctx, sel, &obj)
+	case *model.SteamUserList:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SteamUserList(ctx, sel, obj)
+	case model.NotFoundError:
+		return ec._NotFoundError(ctx, sel, &obj)
+	case *model.NotFoundError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._NotFoundError(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
@@ -2943,6 +3299,69 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 		case "image_url":
 
 			out.Values[i] = ec._Game_image_url(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var gameListImplementors = []string{"GameList", "GameResult"}
+
+func (ec *executionContext) _GameList(ctx context.Context, sel ast.SelectionSet, obj *model.GameList) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, gameListImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GameList")
+		case "games":
+
+			out.Values[i] = ec._GameList_games(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "count":
+
+			out.Values[i] = ec._GameList_count(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var notFoundErrorImplementors = []string{"NotFoundError", "BaseError", "PlayerResult", "PlayersResult", "GameResult"}
+
+func (ec *executionContext) _NotFoundError(ctx context.Context, sel ast.SelectionSet, obj *model.NotFoundError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, notFoundErrorImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NotFoundError")
+		case "message":
+
+			out.Values[i] = ec._NotFoundError_message(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -3092,7 +3511,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
-var steamUserImplementors = []string{"SteamUser"}
+var steamUserImplementors = []string{"SteamUser", "PlayerResult"}
 
 func (ec *executionContext) _SteamUser(ctx context.Context, sel ast.SelectionSet, obj *model.SteamUser) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, steamUserImplementors)
@@ -3126,6 +3545,41 @@ func (ec *executionContext) _SteamUser(ctx context.Context, sel ast.SelectionSet
 		case "avatar_url":
 
 			out.Values[i] = ec._SteamUser_avatar_url(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var steamUserListImplementors = []string{"SteamUserList", "PlayersResult"}
+
+func (ec *executionContext) _SteamUserList(ctx context.Context, sel ast.SelectionSet, obj *model.SteamUserList) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, steamUserListImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SteamUserList")
+		case "users":
+
+			out.Values[i] = ec._SteamUserList_users(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "count":
+
+			out.Values[i] = ec._SteamUserList_count(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -3528,6 +3982,16 @@ func (ec *executionContext) marshalNGame2ᚖgithubᚗcomᚋclaudiolucianoᚋstea
 	return ec._Game(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNGameResult2githubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐGameResult(ctx context.Context, sel ast.SelectionSet, v model.GameResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GameResult(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
 	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3543,8 +4007,24 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) marshalNSteamUser2githubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐSteamUser(ctx context.Context, sel ast.SelectionSet, v model.SteamUser) graphql.Marshaler {
-	return ec._SteamUser(ctx, sel, &v)
+func (ec *executionContext) marshalNPlayerResult2githubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐPlayerResult(ctx context.Context, sel ast.SelectionSet, v model.PlayerResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PlayerResult(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPlayersResult2githubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐPlayersResult(ctx context.Context, sel ast.SelectionSet, v model.PlayersResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PlayersResult(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNSteamUser2ᚕᚖgithubᚗcomᚋclaudiolucianoᚋsteamirᚋapiᚋgraphᚋmodelᚐSteamUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SteamUser) graphql.Marshaler {

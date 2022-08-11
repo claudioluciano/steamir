@@ -37,7 +37,7 @@ func GetSteamID(value string) string {
 		return matchs[1]
 	}
 
-	return ""
+	return value
 }
 
 func IsSteamID(value string) bool {

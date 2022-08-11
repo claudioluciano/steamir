@@ -2,6 +2,14 @@
 #
 # https://gqlgen.com/getting-started/
 
+interface BaseError {
+  message: String!
+}
+
+type NotFoundError implements BaseError {
+  message: String!
+}
+
 type SteamUser {
   steamid: String!
   name: String!
@@ -16,9 +24,23 @@ type Game {
   image_url: String!
 }
 
+type SteamUserList {
+  users: [SteamUser!]!
+  count: Int!
+}
+
+type GameList {
+  games: [Game!]!
+  count: Int!
+}
+
+union PlayerResult = SteamUser | NotFoundError
+union PlayersResult = SteamUserList | NotFoundError
+union GameResult = GameList | NotFoundError
+
 type Query {
-  Player(steamid: String!): SteamUser!
-  Friends(steamid: String!): [SteamUser!]!
-  Players(steamids: [String!]!): [SteamUser!]!
-  OwnedGames(steamid: String!): [Game!]!
+  Player(steamid: String!): PlayerResult!
+  Friends(steamid: String!): PlayersResult!
+  Players(steamids: [String!]!): PlayersResult!
+  OwnedGames(steamid: String!): GameResult!
 }
