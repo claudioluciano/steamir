@@ -2,7 +2,7 @@
 </script>
 
 <template>
-  <div class="w-screen h-screen">
+  <div class="w-screen h-screen bg-light-900">
     <router-view />
   </div>
 </template>
